@@ -1,0 +1,23 @@
+
+# Maven build output
+target/
+
+# Java compiled files
+*.class
+
+# Logs
+*.log
+
+# Local environment files and secrets
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Optional: personal VS Code settings
+# Uncomment if you don't want to share VS Code settings
+# .vscode/
+
+*.code-workspace
