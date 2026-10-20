@@ -3,14 +3,15 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.text.TextFlow?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.geometry.Insets?>
 
 <VBox spacing="20.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.PrimaryController">
    <children>
-      <Label fx:id="targetLabel" wrapText="true" style="-fx-font-size: 20px;" />
-      <TextField fx:id="input" style="-fx-font-size: 18px;" />
+      <TextFlow fx:id="targetFlow" onMouseClicked="#focusInput" />
+      <TextField fx:id="input" opacity="0.0" managed="false" />
       <HBox fx:id="resultBox" alignment="CENTER" spacing="15.0" visible="false">
          <children>
             <Label fx:id="resultLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
