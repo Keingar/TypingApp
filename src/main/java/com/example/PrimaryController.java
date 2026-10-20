@@ -16,7 +16,8 @@ import javafx.scene.text.TextFlow;
 
 public class PrimaryController {
 
-    private static final String TEXT = "The quick brown fox jumps over the lazy dog and runs far away.";
+    private String text = QuoteService.FALLBACK;
+    private final QuoteService quoteService = new QuoteService();
 
     private static final Color PENDING = Color.web("#b5b5b5");
     private static final Font FONT = Font.font(20);
@@ -33,60 +34,79 @@ public class PrimaryController {
 
     @FXML
     private void initialize() {
-        for (char c : TEXT.toCharArray()) {
-            Text t = new Text(String.valueOf(c));
-            t.setFont(FONT);
-            t.setFill(PENDING);
-            chars.add(t);
-        }
-        targetFlow.getChildren().addAll(chars);
-
         // Block typing while there is a mistake; deleting is still allowed
         input.setTextFormatter(new TextFormatter<String>(change -> {
-            if (change.getControlNewText().length() > TEXT.length()) {
+            if (change.getControlNewText().length() > text.length()) {
                 return null;
             }
-            if (!change.getText().isEmpty() && !TEXT.startsWith(change.getControlText())) {
+            if (!change.getText().isEmpty() && !text.startsWith(change.getControlText())) {
                 return null;
             }
             if (!change.getText().isEmpty()) {
                 keystrokes += change.getText().length();
-                if (!TEXT.startsWith(change.getControlNewText())) {
+                if (!text.startsWith(change.getControlNewText())) {
                     mistakes += change.getText().length();
                 }
             }
             return change;
         }));
-        Platform.runLater(input::requestFocus);
 
-        input.textProperty().addListener((obs, old, text) -> {
-            render(text);
-            if (startNanos == 0 && !text.isEmpty()) {
+        input.textProperty().addListener((obs, old, typed) -> {
+            render(typed);
+            if (startNanos == 0 && !typed.isEmpty()) {
                 startNanos = System.nanoTime();
             }
-            if (text.equals(TEXT)) {
+            if (typed.equals(text)) {
                 double minutes = (System.nanoTime() - startNanos) / 60e9;
-                long wpm = Math.round(TEXT.length() / 5.0 / minutes);
+                long wpm = Math.round(text.length() / 5.0 / minutes);
                 long accuracy = Math.round(100.0 * (keystrokes - mistakes) / keystrokes);
                 resultLabel.setText(wpm + " WPM  " + accuracy + "% accuracy");
                 resultBox.setVisible(true);
                 input.setDisable(true);
             }
         });
+
+        loadQuote();
     }
 
-    private void render(String text) {
+    // Fetches off the UI thread; the quote service falls back to static text on failure
+    private void loadQuote() {
+        input.setDisable(true);
+        targetFlow.getChildren().setAll(new Text("Loading..."));
+        Thread worker = new Thread(() -> {
+            String quote = quoteService.fetchQuote();
+            Platform.runLater(() -> showText(quote));
+        });
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void showText(String quote) {
+        text = quote;
+        chars.clear();
+        for (char c : text.toCharArray()) {
+            Text t = new Text(String.valueOf(c));
+            t.setFont(FONT);
+            t.setFill(PENDING);
+            chars.add(t);
+        }
+        targetFlow.getChildren().setAll(chars);
+        input.setDisable(false);
+        input.requestFocus();
+    }
+
+    private void render(String typed) {
         for (int i = 0; i < chars.size(); i++) {
             Text t = chars.get(i);
-            if (i >= text.length()) {
+            if (i >= typed.length()) {
                 t.setFill(PENDING);
                 t.setUnderline(false);
-            } else if (text.charAt(i) == TEXT.charAt(i)) {
+            } else if (typed.charAt(i) == text.charAt(i)) {
                 t.setFill(Color.BLACK);
                 t.setUnderline(false);
             } else {
                 t.setFill(Color.RED);
-                t.setUnderline(TEXT.charAt(i) == ' ');
+                t.setUnderline(text.charAt(i) == ' ');
             }
         }
     }
@@ -101,9 +121,8 @@ public class PrimaryController {
         startNanos = 0;
         keystrokes = 0;
         mistakes = 0;
-        input.setDisable(false);
         input.clear();
         resultBox.setVisible(false);
-        input.requestFocus();
+        loadQuote();
     }
 }
